@@ -3,7 +3,7 @@ import { ElMessage } from 'element-plus'
 
 // 創建 axios 實例
 const service = axios.create({
-    baseURL: 'http://localhost:3000/api', // API 基礎路徑
+    baseURL: import.meta.env.VITE_API_BASE_URL, // API 基礎路徑
     timeout: 15000 // 請求超時時間
 })
 

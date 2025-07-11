@@ -18,6 +18,12 @@
       </el-header> -->
       
       <el-main>
+        <div v-if="appEnv === 'development'" class="env-indicator development">
+          開發環境
+        </div>
+        <div v-else-if="appEnv === 'production'" class="env-indicator production">
+          生產環境
+        </div>
         <router-view></router-view>
       </el-main>
     </el-container>
@@ -26,7 +32,18 @@
 
 <script>
 export default {
-  name: 'App'
+  name: 'App',
+  data() {
+    return {
+      appEnv: import.meta.env.VITE_APP_ENV || 'development',
+      appTitle: import.meta.env.VITE_APP_TITLE || 'Cupola360 Patrol'
+    }
+  },
+  created() {
+    document.title = this.appTitle
+    console.log('當前環境:', this.appEnv)
+    console.log('API 基礎路徑:', import.meta.env.VITE_API_BASE_URL)
+  }
 }
 </script>
 
@@ -57,4 +74,22 @@ export default {
   padding: 20px
   background-color: #f5f7fa
   min-height: calc(100vh - 120px)
+  position: relative
+
+.env-indicator
+  position: fixed
+  top: 10px
+  right: 10px
+  padding: 5px 10px
+  border-radius: 4px
+  color: white
+  font-size: 12px
+  font-weight: bold
+  z-index: 9999
+
+.development
+  background-color: #67C23A
+
+.production
+  background-color: #F56C6C
 </style>
