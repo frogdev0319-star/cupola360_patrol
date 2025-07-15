@@ -1,41 +1,18 @@
 <template>
   <div class="home">
-    
-  
     <!-- 表單示範區域 -->
     <el-card class="demo-section" id="form">
       <template #header>
         <h2 style="font-size: 20px;">{{ inspectionData[0].tag }}</h2>
       </template>
-      <!-- <el-form :model="form" label-width="120px">
-        <el-form-item label="姓名">
-          <el-input v-model="form.name" placeholder="請輸入姓名"></el-input>
-        </el-form-item>
-        
-        <el-form-item label="電子郵件">
-          <el-input v-model="form.email" placeholder="請輸入電子郵件"></el-input>
-        </el-form-item>
-        
-        <el-form-item label="城市">
-          <el-select v-model="form.city" placeholder="請選擇城市">
-            <el-option label="台北" value="taipei"></el-option>
-            <el-option label="台中" value="taichung"></el-option>
-            <el-option label="高雄" value="kaohsiung"></el-option>
-          </el-select>
-        </el-form-item>
-        
-        <el-form-item>
-          <el-button type="primary" @click="submitForm">提交</el-button>
-          <el-button @click="resetForm">重置</el-button>
-        </el-form-item>
-      </el-form> -->
-      <div class="inspect_item_row" v-for="item in inspectionData">
+
+      <div class="inspect_item_row" v-for="item in inspectDetail">
         <!-- ==== with children ==== -->
         <div v-if="item.type == 0 && item.children">
-            <div class="main_title"> {{ item.tag }}</div>
+            <div class="main_title"> {{ item.groupName }}</div>
             <div class="l--"></div>
             <div v-for="_children in item.children">
-              <div class="sub_title">{{_children.name}}</div>
+              <div class="sub_title">{{_children.groupName}}</div>
               <div class="inspect_item" > 
                 <div v-for=" (_item , index) in _children.items">
                   <div class="catergy">
@@ -46,7 +23,7 @@
                     <div class="switch_bg">
                     <el-switch
                       v-model="isQualified"
-                      style="--el-switch-on-color: #409eff; --el-switch-off-color: #eee"
+                      style="--el-switch-on-color: #409eff; --el-switch-off-color: #eee ; width: 130px;"
                       active-text="合格"
                       inactive-text="不合格"
                     />
@@ -58,6 +35,7 @@
                     :rows="2"
                     type="textarea"
                     placeholder="請輸入巡檢項建議"
+                    @change="commentInfo(groupId)"
                   />
                 </div>
               </div>
@@ -65,7 +43,7 @@
         </div>
         <!-- === !children ===-->
         <div v-else-if="item.type == 0 && !item.children">
-            <div class="main_title"> {{ item.name }}</div>
+            <div class="main_title"> {{ item.groupName }}</div>
             <div class="l--"></div>
             <!-- <div class="sub_title">Space</div> -->
             <div class="inspect_item" > 
@@ -78,6 +56,7 @@
                   <div class="switch_bg">
                   <el-switch
                     v-model="isQualified"
+                    style="--el-switch-on-color: #409eff; --el-switch-off-color: #eee ; width: 130px;"
                     active-text="合格"
                     inactive-text="不合格"
                   />
@@ -111,25 +90,51 @@
       <template #header>
         <h2 style="font-size: 20px;">螢幕截圖</h2>
       </template>
-      <el-button type="info"  plain>螢幕截圖</el-button>  
+      <el-button type="info" plain @click="showImg()">螢幕截圖</el-button>
+
+      <br>
+      <br>
+      <div class="" v-show="isShow">
+        <img :src="showimgSrc.imgSrc " alt="">
+      </div>
+
     </el-card>
 
-
+    <el-card class="demo-section" >
+      <el-button type="primary" size="large">提交報告</el-button>
+    </el-card>
+    
 
 
   </div>
 </template>
 
 <script>
-import { ref, reactive } from 'vue'
+import { ref, reactive , onMounted} from 'vue'
 import { ElMessage } from 'element-plus'
 import { submitFormData } from '../api/data'
+import { login, getInspection } from '../api/user'
 
 export default {
   name: 'Home',
   setup() {
     const selectedOption = ref('option1')
     const isQualified = ref(true)
+    const textarea = ref('')
+    const showimgSrc = ref('');
+
+
+    
+
+    // // 處理接收到的 message 資料並顯示
+    // const handleMessage = (data) => {
+    //   console.log('Handling message data:', data);
+    //   showimgSrc.value = data;
+    // };
+    // /// 將事件資料記錄至 console 的 function
+    // const logEventData = (event) => {
+    //   console.log('Event data:', event.data);
+    // };
 
     const inspectionData = [
     {
@@ -600,39 +605,140 @@ export default {
     }
     ]
 
+    const inspectDetail = ref([])
+  
 
-
-
-    const form = reactive({
-      name: '',
-      email: '',
-      city: ''
-    })
-    const resetForm = () => {
-      form.name = ''
-      form.email = ''
-      form.city = ''
-      ElMessage.info('表單已重置')
-    }
-    const submitForm = async () => {
-      try {
-        await submitFormData(form)
-        ElMessage.success('表單提交成功！')
-        resetForm()
-      } catch (error) {
-        console.error('提交表單失敗:', error)
+    const getRouteByTag = (curTag, data) =>{
+      console.log('data !!!!:>> ', data);
+      console.log('curTag :>> ', curTag);
+      const temp = [];
+      if (data.length != 0) {
+        data.forEach(item => {
+          if (item.tag == curTag) {
+            temp.push(item);
+          }
+        });
       }
+      return temp;
     }
+
+    const handleInspctionCatergyTree = (arr, key='groupId') =>{
+      let cloneData = JSON.parse(JSON.stringify(arr));
+      console.log('cloneData :>> ', cloneData);
+      return cloneData.filter(father => {
+        let branchArr = cloneData.filter(child => father[key] === child.parentId);
+        if (branchArr.length > 0){
+          father.children = branchArr;
+          father.itemCount = 0;
+          branchArr.forEach(item => father.itemCount += item.itemCount)
+        }
+        
+        return father.parentId == -1;
+      })
+    }
+
+    // const form = reactive({
+    //   name: '',
+    //   email: '',
+    //   city: ''
+    // })
+    // const resetForm = () => {
+    //   form.name = ''
+    //   form.email = ''
+    //   form.city = ''
+    //   ElMessage.info('表單已重置')
+    // }
+    // const submitForm = async () => {
+    //   try {
+    //     await submitFormData(form)
+    //     ElMessage.success('表單提交成功！')
+    //     resetForm()
+    //   } catch (error) {
+    //     console.error('提交表單失敗:', error)
+    //   }
+    // }
+
+    const isShow = ref(false)
+    const showImg = ()=>{
+      isShow.value = true
+      console.log('isShow.value :>> ', isShow.value);
+    }
+
+
+    const screenShot = () =>{
+      window.addEventListener('message', function(event) {
+
+        showimgSrc.value = event.data;
+
+        // // 檢查訊息來源，確保只處理來自信任來源的訊息
+        // if (event.origin === 'http://www.frogdeng.com' ) {
+        //   console.log('event.data :>> ', event.data);
+        //   showimgSrc.value = event.data;
+        // } else {
+        //   // console.log('Received message from untrusted origin:', event.origin);
+        // }
+      }, false);
+    }
+
+
+    const commentInfo = (id)=>{
+      console.log("id" , id)
+    }
+
+    onMounted(() => {
+      login().then(res => {
+        // 解析 token 並存儲到 localStorage
+        const tokenMatch = res.url.split('token=')
+        if (tokenMatch.length > 1) {
+          const token = tokenMatch[1]
+          localStorage.setItem('token', token)
+        }
+      }).catch(err => {
+        console.error('login error', err)
+      });
+
+
+      getInspection().then(res => {
+          console.log('getInspection res groups:>> ', res.groups);
+          res.groups
+
+          // const curTag = "Linkou warehouse inspection"
+          // const data = getRouteByTag(curTag, res.groups);
+          // console.log('data :>> ', data);
+          const filterData = handleInspctionCatergyTree(res.groups);
+          console.log('filterData ::::::::>> ', filterData);
+          inspectDetail.value = filterData
+        }).catch(err => {
+      });
+
+      screenShot();
+    });
 
     return {
       selectedOption,
-      form,
-      submitForm,
-      resetForm,
+      textarea,
+      // form,
+      // submitForm,
+      // resetForm,
       isQualified,
-      inspectionData
+      inspectionData,
+      showimgSrc,
+      isShow,
+      inspectDetail,
+
+      screenShot,
+      getRouteByTag,
+      handleInspctionCatergyTree,
+      showImg,
+      commentInfo
+      
+
     }
+
+      
   }
+
+  
 }
 </script>
 

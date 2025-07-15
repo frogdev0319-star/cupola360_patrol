@@ -18,12 +18,13 @@
       </el-header> -->
       
       <el-main>
-        <div v-if="appEnv === 'development'" class="env-indicator development">
+        <!-- <div v-if="appEnv === 'development'" class="env-indicator development">
           開發環境
         </div>
         <div v-else-if="appEnv === 'production'" class="env-indicator production">
           生產環境
-        </div>
+        </div> -->
+        
         <router-view></router-view>
       </el-main>
     </el-container>

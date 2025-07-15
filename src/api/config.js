@@ -7,6 +7,8 @@ const service = axios.create({
     timeout: 15000 // 請求超時時間
 })
 
+
+
 // 請求攔截器
 service.interceptors.request.use(
     config => {
@@ -14,7 +16,8 @@ service.interceptors.request.use(
         // 例如：添加 token
         const token = localStorage.getItem('token')
         if (token) {
-            config.headers['Authorization'] = `Bearer ${token}`
+            // config.headers['Authorization'] = `Bearer ${token}`
+            config.headers['deviceToken'] = `${token}`
         }
         return config
     },
@@ -32,7 +35,7 @@ service.interceptors.response.use(
         const res = response.data
 
         // 假設後端返回的數據結構為 { code: number, data: any, message: string }
-        if (res.code === 200) {
+        if (res.errCode === 0) {
             return res.data
         } else {
             ElMessage.error(res.message || '發生錯誤')
