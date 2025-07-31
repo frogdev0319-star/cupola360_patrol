@@ -11,6 +11,7 @@ export function login(data) {
 }
 
 
+
 export function getInspection() {
     return request({
         url: 'https://preview-inspection.wise-iservice.com/storemonitor/api/v1.0/inspect/remote/checkout',

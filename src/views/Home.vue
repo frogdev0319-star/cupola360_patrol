@@ -1,5 +1,22 @@
 <template>
-  <div class="home">
+  <div class="home" v-loading="loading">
+    
+    <!-- screenshot -->
+    <el-card class="demo-section" id="form">
+      <template #header>
+        <h2 style="font-size: 20px;">螢幕截圖</h2>
+      </template>
+      <el-button type="info" plain @click="sentRequest()">螢幕截圖</el-button>
+
+      <br>
+      <br>
+      <div class="" v-show="isShow">
+        <img :src="showimgSrc.imgSrc " alt="">
+      </div>
+    </el-card>
+
+
+
     <!-- 表單示範區域 -->
     <el-card class="demo-section" id="form">
       <template #header>
@@ -22,7 +39,7 @@
                     </div>
                     <div class="switch_bg">
                     <el-switch
-                      v-model="isQualified"
+                      v-model="_item.itemScore"
                       style="--el-switch-on-color: #409eff; --el-switch-off-color: #eee ; width: 130px;"
                       active-text="合格"
                       inactive-text="不合格"
@@ -30,12 +47,11 @@
                     </div>
                   </div>
                   <el-input
-                    v-model="textarea"
+                    v-model="_item.description"
                     style="width:calc(100% - 20px) ; margin-left: 20px; margin-bottom: 25px;"
                     :rows="2"
                     type="textarea"
                     placeholder="請輸入巡檢項建議"
-                    @change="commentInfo(groupId)"
                   />
                 </div>
               </div>
@@ -55,7 +71,7 @@
                   </div>
                   <div class="switch_bg">
                   <el-switch
-                    v-model="isQualified"
+                    v-model="_item.itemScore"
                     style="--el-switch-on-color: #409eff; --el-switch-off-color: #eee ; width: 130px;"
                     active-text="合格"
                     inactive-text="不合格"
@@ -63,7 +79,7 @@
                   </div>
                 </div>
                 <el-input
-                  v-model="textarea"
+                  v-model="_item.description"
                   style="width:calc(100% - 20px) ; margin-left: 20px; margin-bottom: 25px;"
                   :rows="2"
                   type="textarea"
@@ -85,23 +101,12 @@
       <el-button type="info"  plain>立即督導</el-button>
     </el-card>
 
-    <!-- screenshot -->
-    <el-card class="demo-section" id="form">
-      <template #header>
-        <h2 style="font-size: 20px;">螢幕截圖</h2>
-      </template>
-      <el-button type="info" plain @click="showImg()">螢幕截圖</el-button>
 
-      <br>
-      <br>
-      <div class="" v-show="isShow">
-        <img :src="showimgSrc.imgSrc " alt="">
-      </div>
 
-    </el-card>
 
+    <!-- sumit -->
     <el-card class="demo-section" >
-      <el-button type="primary" size="large">提交報告</el-button>
+      <el-button type="primary" size="large" @click="submit">提交報告</el-button>
     </el-card>
     
 
@@ -123,7 +128,7 @@ export default {
     const textarea = ref('')
     const showimgSrc = ref('');
 
-
+    const loading = ref(true)
     
 
     // // 處理接收到的 message 資料並顯示
@@ -604,13 +609,51 @@ export default {
         "isAdvanced": false
     }
     ]
-
     const inspectDetail = ref([])
   
+    onMounted( async() => {
+
+      screenShot();
+      await init()
+      
+    
+    });
+
+    const init = async () => {
+        loading.value = true
+        await userLogin();
+        await getInspectData();
+    }
+
+
+    const userLogin = async () =>{
+      await login().then(res => {
+        // 解析 token 並存儲到 localStorage
+        const tokenMatch = res.url.split('token=')
+        if (tokenMatch.length > 1) {
+          const token = tokenMatch[1]
+          localStorage.setItem('token', token)
+        }
+      }).catch(err => {
+        console.error('login error', err)
+      });
+    }
+
+    const getInspectData = async () => {
+      try {
+        const inspectionRes = await getInspection();
+        const filterData = handleInspctionCatergyTree(inspectionRes.groups);
+        // console.log('filterData ::::::::>> ', filterData);
+        inspectDetail.value = filterData;
+        loading.value = false
+      } catch (err) {
+        console.error('getInspection error', err);
+        console.error('Error details:', err.response ? err.response.data : err.message);
+      }
+    }
+
 
     const getRouteByTag = (curTag, data) =>{
-      console.log('data !!!!:>> ', data);
-      console.log('curTag :>> ', curTag);
       const temp = [];
       if (data.length != 0) {
         data.forEach(item => {
@@ -624,7 +667,7 @@ export default {
 
     const handleInspctionCatergyTree = (arr, key='groupId') =>{
       let cloneData = JSON.parse(JSON.stringify(arr));
-      console.log('cloneData :>> ', cloneData);
+      // console.log('cloneData :>> ', cloneData);
       return cloneData.filter(father => {
         let branchArr = cloneData.filter(child => father[key] === child.parentId);
         if (branchArr.length > 0){
@@ -637,39 +680,28 @@ export default {
       })
     }
 
-    // const form = reactive({
-    //   name: '',
-    //   email: '',
-    //   city: ''
-    // })
-    // const resetForm = () => {
-    //   form.name = ''
-    //   form.email = ''
-    //   form.city = ''
-    //   ElMessage.info('表單已重置')
-    // }
-    // const submitForm = async () => {
-    //   try {
-    //     await submitFormData(form)
-    //     ElMessage.success('表單提交成功！')
-    //     resetForm()
-    //   } catch (error) {
-    //     console.error('提交表單失敗:', error)
-    //   }
-    // }
-
     const isShow = ref(false)
-    const showImg = ()=>{
-      isShow.value = true
-      console.log('isShow.value :>> ', isShow.value);
+    const sentRequest = ()=>{
+      // isShow.value = true
+      // console.log('isShow.value :>> ', isShow.value);
+
+      console.log('parent url', document.referrer);
+
+      window.parent.postMessage(
+        { type: 'greeting', data: 'https://demo-factory.cupola360.com/' },
+        document.referrer
+      );
+      
     }
 
-
     const screenShot = () =>{
+      isShow.value = true
       window.addEventListener('message', function(event) {
+        console.log('event :>> ', event);
 
         showimgSrc.value = event.data;
-
+        console.log('showimgSrc.value :>> ',  showimgSrc.value);
+        // console.log('showimgSrc.value :>> ', showimgSrc.value);
         // // 檢查訊息來源，確保只處理來自信任來源的訊息
         // if (event.origin === 'http://www.frogdeng.com' ) {
         //   console.log('event.data :>> ', event.data);
@@ -680,59 +712,70 @@ export default {
       }, false);
     }
 
+    const submit = ()=>{
+      var tempSubmitItem = []
+      inspectDetail.value.forEach(i =>{
+        if(i.children){
+          i.children.forEach( ii =>{
+            ii.items.forEach(_items =>{
+              var i_temp = {}
+              _items.itemScore  = _items.itemScore == true ? 1 : 0
+              
+              i_temp.ts = Date.parse(new Date())
+              i_temp.grade = _items.itemScore
+              i_temp.description = _items.description
+              i_temp.storeId = "KjRcBMbWKWms"
+              i_temp.inspectItemId = _items.id
 
-    const commentInfo = (id)=>{
-      console.log("id" , id)
+              tempSubmitItem.push(i_temp)
+            })
+          })
+        }
+        else {
+          i.items.forEach(_items =>{
+              var i_temp = {}
+              _items.itemScore  = _items.itemScore == true ? 1 : 0
+              
+              i_temp.ts = Date.parse(new Date())
+              i_temp.grade = _items.itemScore
+              i_temp.description = _items.description
+              i_temp.storeId = "KjRcBMbWKWms"
+              i_temp.inspectItemId = _items.id
+
+              tempSubmitItem.push(i_temp)
+            })
+        }
+        
+      })
+      console.log('tempSubmitItem :>> ', tempSubmitItem);
+      console.log('submit inspectDetail :>> ', inspectDetail.value);
+      
+
+
+      
+
+
+
+
+
     }
 
-    onMounted(() => {
-      login().then(res => {
-        // 解析 token 並存儲到 localStorage
-        const tokenMatch = res.url.split('token=')
-        if (tokenMatch.length > 1) {
-          const token = tokenMatch[1]
-          localStorage.setItem('token', token)
-        }
-      }).catch(err => {
-        console.error('login error', err)
-      });
-
-
-      getInspection().then(res => {
-          console.log('getInspection res groups:>> ', res.groups);
-          res.groups
-
-          // const curTag = "Linkou warehouse inspection"
-          // const data = getRouteByTag(curTag, res.groups);
-          // console.log('data :>> ', data);
-          const filterData = handleInspctionCatergyTree(res.groups);
-          console.log('filterData ::::::::>> ', filterData);
-          inspectDetail.value = filterData
-        }).catch(err => {
-      });
-
-      screenShot();
-    });
-
+  
     return {
       selectedOption,
       textarea,
-      // form,
-      // submitForm,
-      // resetForm,
       isQualified,
       inspectionData,
       showimgSrc,
       isShow,
       inspectDetail,
-
+      loading,
+      
       screenShot,
       getRouteByTag,
       handleInspctionCatergyTree,
-      showImg,
-      commentInfo
-      
-
+      sentRequest,
+      submit
     }
 
       
