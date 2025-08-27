@@ -10,8 +10,8 @@
 
       <br>
       <br>
-      <div class="" v-show="isShow">
-        <img :src="showimgSrc.imgSrc " alt="">
+      <div class="imgscreen" v-show="isShow">
+        <img :src="showimgSrc" alt="" width="100%">
       </div>
     </el-card>
 
@@ -23,7 +23,7 @@
         <h2 style="font-size: 20px;">{{ inspectionData[0].tag }}</h2>
       </template>
 
-      <div class="inspect_item_row" v-for="item in inspectDetail">
+      <div class="inspect_item_row" v-for="item in inspectionData">
         <!-- ==== with children ==== -->
         <div v-if="item.type == 0 && item.children">
             <div class="main_title"> {{ item.groupName }}</div>
@@ -126,7 +126,7 @@ export default {
     const selectedOption = ref('option1')
     const isQualified = ref(true)
     const textarea = ref('')
-    const showimgSrc = ref('');
+    const showimgSrc = ref('')
 
     const loading = ref(true)
     
@@ -681,26 +681,59 @@ export default {
     }
 
     const isShow = ref(false)
+   
+
+    let parentUrl = null;
+    window.addEventListener("message", (event) => {
+      if (event.data?.parentUrl) {
+        parentUrl = event.data.parentUrl;
+      }
+    });
+
     const sentRequest = ()=>{
       // isShow.value = true
       // console.log('isShow.value :>> ', isShow.value);
 
-      console.log('parent url', document.referrer);
+      console.log('parent url', parentUrl)
+      // 僅傳送到父頁面的來源（若可取得）
+      let targetOrigin = '*'
+      try {
+        if (parentUrl) {
+          targetOrigin = new URL(parentUrl).origin
+        }
+      } catch (e) {
+        // ignore parse error, fallback to '*'
+      }
 
       window.parent.postMessage(
         { type: 'greeting', data: 'https://demo-factory.cupola360.com/' },
-        document.referrer
-      );
-      
+        targetOrigin
+      )
     }
+    
+
+
 
     const screenShot = () =>{
       isShow.value = true
       window.addEventListener('message', function(event) {
-        console.log('event :>> ', event);
+        console.log('event :>> ', event)
 
-        showimgSrc.value = event.data;
-        console.log('showimgSrc.value :>> ',  showimgSrc.value);
+        // 僅接受可信來源（與父頁相同的 origin 若可判斷）
+        try {
+          if (document.referrer) {
+            const parentOrigin = new URL(document.referrer).origin
+            if (event.origin !== parentOrigin) return
+          }
+        } catch (e) {
+          // 若無法判斷，放行但仍只處理預期資料格式
+        }
+
+        // 支援 { imgSrc: '...' } 或直接字串
+        if (event && event.data) {
+          showimgSrc.value = typeof event.data === 'string' ? event.data : (event.data.imgSrc || '')
+        }
+        console.log('showimgSrc.value :>> ',  showimgSrc.value)
         // console.log('showimgSrc.value :>> ', showimgSrc.value);
         // // 檢查訊息來源，確保只處理來自信任來源的訊息
         // if (event.origin === 'http://www.frogdeng.com' ) {
@@ -709,7 +742,7 @@ export default {
         // } else {
         //   // console.log('Received message from untrusted origin:', event.origin);
         // }
-      }, false);
+      }, false)
     }
 
     const submit = ()=>{
@@ -836,4 +869,5 @@ export default {
         font-size: 15px
         color: #555
         line-height: 1.5
+        
 </style>

@@ -34,13 +34,17 @@ service.interceptors.response.use(
         // 處理響應數據
         const res = response.data
 
-        // 假設後端返回的數據結構為 { code: number, data: any, message: string }
-        if (res.errCode === 0) {
-            return res.data
-        } else {
+        // 若回傳物件有 errCode，依約定處理；否則直接回傳資料
+        if (res && typeof res === 'object' && Object.prototype.hasOwnProperty.call(res, 'errCode')) {
+            if (res.errCode === 0) {
+                return res.data
+            }
             ElMessage.error(res.message || '發生錯誤')
             return Promise.reject(new Error(res.message || '發生錯誤'))
         }
+
+        // 非統一格式（如第三方 API）直接回傳，交由呼叫端自行判斷
+        return res
     },
     error => {
         // 處理響應錯誤
