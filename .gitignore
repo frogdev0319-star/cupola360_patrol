@@ -41,3 +41,6 @@ dist-ssr
 # Cache
 .cache
 .temp
+
+# Codex CLI
+.codex/
