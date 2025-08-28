@@ -43,7 +43,7 @@ export default {
   created() {
     document.title = this.appTitle
     console.log('當前環境:', this.appEnv)
-    console.log('API 基礎路徑:', import.meta.env.VITE_API_BASE_URL)
+    // console.log('API 基礎路徑:', import.meta.env.VITE_API_BASE_URL)
   }
 }
 </script>

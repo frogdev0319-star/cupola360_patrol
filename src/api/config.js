@@ -15,6 +15,8 @@ service.interceptors.request.use(
         // 在發送請求之前做些什麼
         // 例如：添加 token
         const token = localStorage.getItem('token')
+        // console.log('token :>> ', token);
+
         if (token) {
             // config.headers['Authorization'] = `Bearer ${token}`
             config.headers['deviceToken'] = `${token}`

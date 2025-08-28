@@ -1,6 +1,7 @@
 <template>
   <div class="home" v-loading="loading">
     
+  
     <!-- screenshot -->
     <el-card class="demo-section" id="form">
       <template #header>
@@ -10,6 +11,8 @@
 
       <br>
       <br>
+
+
       <div class="imgscreen" v-show="isShow">
         <img :src="showimgSrc" alt="" width="100%">
       </div>
@@ -20,10 +23,10 @@
     <!-- 表單示範區域 -->
     <el-card class="demo-section" id="form">
       <template #header>
-        <h2 style="font-size: 20px;">{{ inspectionData[0].tag }}</h2>
+        <!-- <h2 style="font-size: 20px;">{{ inspectDetail[0].tag }}</h2> -->
       </template>
 
-      <div class="inspect_item_row" v-for="item in inspectionData">
+      <div class="inspect_item_row" v-for="item in inspectDetail">
         <!-- ==== with children ==== -->
         <div v-if="item.type == 0 && item.children">
             <div class="main_title"> {{ item.groupName }}</div>
@@ -118,7 +121,8 @@
 import { ref, reactive , onMounted} from 'vue'
 import { ElMessage } from 'element-plus'
 import { submitFormData } from '../api/data'
-import { login, getInspection } from '../api/user'
+import { login, getInspection, getInspectToken } from '../api/user'
+import { Clock } from '@element-plus/icons-vue'
 
 export default {
   name: 'Home',
@@ -130,6 +134,7 @@ export default {
 
     const loading = ref(true)
     
+    let parentUrl = null;
 
     // // 處理接收到的 message 資料並顯示
     // const handleMessage = (data) => {
@@ -140,6 +145,14 @@ export default {
     // const logEventData = (event) => {
     //   console.log('Event data:', event.data);
     // };
+
+
+
+    // const url = new URL(window.location.href);
+    // const token = url.searchParams.get('token'); 
+    // console.log('url :>> ', url);
+    // console.log('token ------:>> ', token);
+
 
     const inspectionData = [
     {
@@ -621,7 +634,8 @@ export default {
 
     const init = async () => {
         loading.value = true
-        await userLogin();
+        // await userLogin();
+        await getToken();
         await getInspectData();
     }
 
@@ -639,9 +653,34 @@ export default {
       });
     }
 
+    const testsecret = "testsecret"
+    const getToken = async () =>{
+      await getInspectToken().then(res => {
+        // 解析 token 並存儲到 localStorage
+        // console.log('res.data :>> ', res.data);
+        if(res){
+          const m = res.data.url.match(/token=([^&]+)/);
+          const token = m ? m[1] : null;
+          localStorage.setItem('token', token)
+        }
+        // const tokenMatch = res.url.split('token=')
+        // if (tokenMatch.length > 1) {
+        //   const token = tokenMatch[1]
+        //   localStorage.setItem('token', token)
+        // }
+      }).catch(err => {
+        console.error('login error', err)
+      });
+    }
+
+
+    
     const getInspectData = async () => {
       try {
         const inspectionRes = await getInspection();
+        console.log('inspectionRes :>> ', inspectionRes);
+
+
         const filterData = handleInspctionCatergyTree(inspectionRes.groups);
         // console.log('filterData ::::::::>> ', filterData);
         inspectDetail.value = filterData;
@@ -681,20 +720,22 @@ export default {
     }
 
     const isShow = ref(false)
-   
 
-    let parentUrl = null;
+
+
     window.addEventListener("message", (event) => {
+      // console.log("父頁面網址:", event);
       if (event.data?.parentUrl) {
         parentUrl = event.data.parentUrl;
+        console.log('parentUrl :>> ', parentUrl);
       }
-    });
+    });  
+  
 
     const sentRequest = ()=>{
       // isShow.value = true
       // console.log('isShow.value :>> ', isShow.value);
 
-      console.log('parent url', parentUrl)
       // 僅傳送到父頁面的來源（若可取得）
       let targetOrigin = '*'
       try {
@@ -717,11 +758,12 @@ export default {
     const screenShot = () =>{
       isShow.value = true
       window.addEventListener('message', function(event) {
-        console.log('event :>> ', event)
+        // console.log('event :>> ', event)
 
         // 僅接受可信來源（與父頁相同的 origin 若可判斷）
         try {
           if (document.referrer) {
+            console.log('document.referrer :>> ', document.referrer);
             const parentOrigin = new URL(document.referrer).origin
             if (event.origin !== parentOrigin) return
           }
@@ -733,7 +775,7 @@ export default {
         if (event && event.data) {
           showimgSrc.value = typeof event.data === 'string' ? event.data : (event.data.imgSrc || '')
         }
-        console.log('showimgSrc.value :>> ',  showimgSrc.value)
+        // console.log('showimgSrc.value :>> ',  showimgSrc.value)
         // console.log('showimgSrc.value :>> ', showimgSrc.value);
         // // 檢查訊息來源，確保只處理來自信任來源的訊息
         // if (event.origin === 'http://www.frogdeng.com' ) {
@@ -783,14 +825,6 @@ export default {
       console.log('tempSubmitItem :>> ', tempSubmitItem);
       console.log('submit inspectDetail :>> ', inspectDetail.value);
       
-
-
-      
-
-
-
-
-
     }
 
   
@@ -810,8 +844,6 @@ export default {
       sentRequest,
       submit
     }
-
-      
   }
 
   

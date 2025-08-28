@@ -1,6 +1,8 @@
 import request from './config'
 
 
+
+
 // 用戶登入
 export function login(params) {
     return request({
@@ -11,11 +13,20 @@ export function login(params) {
 }
 
 
-
 export function getInspection() {
     return request({
-        url: 'https://preview-inspection.wise-iservice.com/storemonitor/api/v1.0/inspect/remote/checkout',
+        url: 'https://preview-inspection.wise-iservice.com/storemonitor/api/v1.0/inspect/remote/checkout?isMysteryMode=false',
         method: 'get'
+    })
+}
+
+
+
+export function getInspectToken() {
+    return request({
+        url: 'https://demo-factory.cupola360.com/1/plugin/iService?key=testsecret2',
+        method: 'get',
+
     })
 }
 
