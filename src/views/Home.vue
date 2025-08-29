@@ -1,19 +1,15 @@
 <template>
   <div class="home" v-loading="loading">
     <!-- screenshot -->
-    <el-card class="demo-section" id="form">
+    <!-- <el-card class="demo-section" id="form">
       <template #header>
         <h2 style="font-size: 20px">螢幕截圖</h2>
       </template>
       <el-button type="info" plain @click="sentRequest()">螢幕截圖</el-button>
-
-      <br />
-      <br />
-
       <div class="imgscreen" v-show="isShow">
         <img :src="showimgSrc" alt="" width="100%" />
       </div>
-    </el-card>
+    </el-card> -->
 
     <!-- 表單示範區域 -->
     <el-card class="demo-section" id="form">
@@ -63,6 +59,10 @@
                   type="textarea"
                   placeholder="請輸入巡檢項建議"
                 />
+                <el-button type="info" plain @click="sentRequest(_item)">螢幕截圖</el-button>
+                <div class="imgscreen" v-show="isShow">
+                  <img v-for="(img, idx) in _item.images" :key="idx" :src="img" alt="" width="100%" style="margin-bottom:8px;" />
+                </div>
               </div>
             </div>
           </div>
@@ -103,6 +103,12 @@
                 type="textarea"
                 placeholder="請輸入巡檢項建議"
               />
+              <el-button type="info" plain @click="sentRequest(_item)">螢幕截圖</el-button>
+                <div class="imgscreen" v-show="isShow">
+                  <img v-for="(img, idx) in _item.images" :key="idx" :src="img" alt="" width="50%" style="margin-bottom:8px;" />
+                </div>
+
+    
             </div>
           </div>
         </div>
@@ -141,7 +147,10 @@ export default {
     const selectedOption = ref("option1");
     const isQualified = ref(true);
     const textarea = ref("");
-    const showimgSrc = ref("");
+    // 每個 item 各自多圖，不再用全域 showimgSrc
+    const showimgSrc = ref([]); // 保留但不再用
+    // 暫存目前要 push 圖片的 item id
+    let currentItem = null;
 
     const loading = ref(true);
 
@@ -692,6 +701,20 @@ export default {
         console.log("inspectionRes :>> ", inspectionRes);
 
         const filterData = handleInspctionCatergyTree(inspectionRes.groups);
+
+        // 遞迴初始化所有 item.images = []
+        function initImages(arr) {
+          arr.forEach(group => {
+            if (group.items) {
+              group.items.forEach(item => {
+                if (!Array.isArray(item.images)) item.images = [];
+              });
+            }
+            if (group.children) initImages(group.children);
+          });
+        }
+        initImages(filterData);
+
         // console.log('filterData ::::::::>> ', filterData);
         inspectDetail.value = filterData;
         loading.value = false;
@@ -743,7 +766,9 @@ export default {
       }
     });
 
-    const sentRequest = () => {
+    // 傳入 item 物件
+    const sentRequest = (item) => {
+      currentItem = item;
       // isShow.value = true
       // console.log('isShow.value :>> ', isShow.value);
 
@@ -783,10 +808,15 @@ export default {
 
           // 支援 { imgSrc: '...' } 或直接字串
           if (event && event.data) {
-            showimgSrc.value =
+            // 多圖 push到對應 item
+            const img =
               typeof event.data === "string"
                 ? event.data
                 : event.data.imgSrc || "";
+            if (img && currentItem) {
+              if (!Array.isArray(currentItem.images)) currentItem.images = [];
+              currentItem.images.push(img);
+            }
           }
           // console.log('showimgSrc.value :>> ',  showimgSrc.value)
           // console.log('showimgSrc.value :>> ', showimgSrc.value);
