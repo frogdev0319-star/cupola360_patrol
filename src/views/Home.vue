@@ -59,9 +59,20 @@
                   type="textarea"
                   placeholder="請輸入巡檢項建議"
                 />
-                <el-button type="info" plain @click="sentRequest(_item)">螢幕截圖</el-button>
+                <el-button type="info" plain @click="sentRequest(_item)" :disabled="_item.images && _item.images.length >= 3">螢幕截圖</el-button>
                 <div class="imgscreen" v-show="isShow">
-                  <img v-for="(img, idx) in _item.images" :key="idx" :src="img" alt="" width="100%" style="margin-bottom:8px;" />
+                  <div v-for="(img, idx) in _item.images" :key="idx" class="image-container" style="position: relative; display: inline-block; margin-right: 10px; margin-bottom: 8px;">
+                    <img :src="img" alt="" width="20%" />
+                    <el-button
+                      type="danger"
+                      size="small"
+                      circle
+                      style="position: absolute; top: -5px; right: -5px; width: 20px; height: 20px; padding: 0;"
+                      @click="deleteImage(_item, idx)"
+                    >
+                      <el-icon size="12"><Close /></el-icon>
+                    </el-button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -103,9 +114,20 @@
                 type="textarea"
                 placeholder="請輸入巡檢項建議"
               />
-              <el-button type="info" plain @click="sentRequest(_item)">螢幕截圖</el-button>
+              <el-button type="info" plain @click="sentRequest(_item)" :disabled="_item.images && _item.images.length >= 3">螢幕截圖</el-button>
                 <div class="imgscreen" v-show="isShow">
-                  <img v-for="(img, idx) in _item.images" :key="idx" :src="img" alt="" width="50%" style="margin-bottom:8px;" />
+                  <div v-for="(img, idx) in _item.images" :key="idx" class="image-container" style="position: relative; display: inline-block; margin-right: 10px; margin-bottom: 8px;">
+                    <img :src="img" alt="" width="50%" />
+                    <el-button
+                      type="danger"
+                      size="small"
+                      circle
+                      style="position: absolute; top: -5px; right: -5px; width: 20px; height: 20px; padding: 0;"
+                      @click="deleteImage(_item, idx)"
+                    >
+                      <el-icon size="12"><Close /></el-icon>
+                    </el-button>
+                  </div>
                 </div>
 
     
@@ -139,7 +161,7 @@ import { ref, reactive, onMounted } from "vue";
 import { ElMessage } from "element-plus";
 import { submitFormData } from "../api/data";
 import { login, getInspection, getInspectToken } from "../api/user";
-import { Clock } from "@element-plus/icons-vue";
+import { Clock, Close } from "@element-plus/icons-vue";
 
 export default {
   name: "Home",
@@ -768,6 +790,12 @@ export default {
 
     // 傳入 item 物件
     const sentRequest = (item) => {
+      // 檢查是否已達到3張截圖限制
+      if (item.images && item.images.length >= 3) {
+        ElMessage.warning('每個項目最多只能上傳3張截圖');
+        return;
+      }
+
       currentItem = item;
       // isShow.value = true
       // console.log('isShow.value :>> ', isShow.value);
@@ -832,6 +860,14 @@ export default {
       );
     };
 
+    // 刪除指定項目的指定索引的圖片
+    const deleteImage = (item, index) => {
+      if (item.images && item.images.length > index) {
+        item.images.splice(index, 1);
+        ElMessage.success('圖片已刪除');
+      }
+    };
+
     const submit = () => {
       var tempSubmitItem = [];
       inspectDetail.value.forEach((i) => {
@@ -883,6 +919,7 @@ export default {
       getRouteByTag,
       handleInspctionCatergyTree,
       sentRequest,
+      deleteImage,
       submit,
     };
   },
