@@ -61,13 +61,13 @@
                 />
                 <el-button type="info" plain @click="sentRequest(_item)" :disabled="_item.images && _item.images.length >= 3">螢幕截圖</el-button>
                 <div class="imgscreen" v-show="isShow">
-                  <div v-for="(img, idx) in _item.images" :key="idx" class="image-container" style="position: relative; display: inline-block; margin-right: 10px; margin-bottom: 8px;">
-                    <img :src="img" alt="" width="20%" />
+                  <div v-for="(img, idx) in _item.images" :key="idx" class="image-wrapper">
+                    <img :src="img" alt="" width="100%" class="screenshot-image" />
                     <el-button
                       type="danger"
                       size="small"
                       circle
-                      style="position: absolute; top: -5px; right: -5px; width: 20px; height: 20px; padding: 0;"
+                      class="delete-btn"
                       @click="deleteImage(_item, idx)"
                     >
                       <el-icon size="12"><Close /></el-icon>
@@ -116,13 +116,13 @@
               />
               <el-button type="info" plain @click="sentRequest(_item)" :disabled="_item.images && _item.images.length >= 3">螢幕截圖</el-button>
                 <div class="imgscreen" v-show="isShow">
-                  <div v-for="(img, idx) in _item.images" :key="idx" class="image-container" style="position: relative; display: inline-block; margin-right: 10px; margin-bottom: 8px;">
-                    <img :src="img" alt="" width="50%" />
+                  <div v-for="(img, idx) in _item.images" :key="idx" class="image-wrapper">
+                    <img :src="img" alt="" width="100%" class="screenshot-image" />
                     <el-button
                       type="danger"
                       size="small"
                       circle
-                      style="position: absolute; top: -5px; right: -5px; width: 20px; height: 20px; padding: 0;"
+                      class="delete-btn"
                       @click="deleteImage(_item, idx)"
                     >
                       <el-icon size="12"><Close /></el-icon>
@@ -977,4 +977,38 @@ export default {
         font-size: 15px
         color: #555
         line-height: 1.5
+
+// 圖片容器和刪除按鈕的樣式
+.image-wrapper
+  position: relative
+  display: inline-block
+  width: 30%
+  margin-right: 10px
+  margin-bottom: 8px
+
+.screenshot-image
+  display: block
+  border-radius: 4px
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1)
+
+.delete-btn
+  position: absolute
+  top: 5px
+  right: 5px
+  width: 24px !important
+  height: 24px !important
+  padding: 0 !important
+  border-radius: 50%
+  background-color: #f56c6c
+  border: 2px solid #ffffff
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2)
+  z-index: 10
+
+  &:hover
+    background-color: #f78989
+    transform: scale(1.1)
+    transition: all 0.2s ease
+
+  .el-icon
+    margin: 0
 </style>
