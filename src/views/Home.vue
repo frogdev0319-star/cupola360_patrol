@@ -53,16 +53,32 @@
                   style="
                     width: calc(100% - 20px);
                     margin-left: 20px;
-                    margin-bottom: 25px;
+                    margin-bottom: 10px;
                   "
                   :rows="2"
                   type="textarea"
                   placeholder="請輸入巡檢項建議"
                 />
-                <el-button type="info" plain @click="sentRequest(_item)" :disabled="_item.images && _item.images.length >= 3">螢幕截圖</el-button>
+                <el-button
+                  style="margin-bottom: 10px; margin-left: 20px"
+                  type="info"
+                  plain
+                  @click="sentRequest(_item)"
+                  :disabled="_item.images && _item.images.length >= 3"
+                  >螢幕截圖</el-button
+                >
                 <div class="imgscreen" v-show="isShow">
-                  <div v-for="(img, idx) in _item.images" :key="idx" class="image-wrapper">
-                    <img :src="img" alt="" width="100%" class="screenshot-image" />
+                  <div
+                    v-for="(img, idx) in _item.images"
+                    :key="idx"
+                    class="image-wrapper"
+                  >
+                    <img
+                      :src="img"
+                      alt=""
+                      width="100%"
+                      class="screenshot-image"
+                    />
                     <el-button
                       type="danger"
                       size="small"
@@ -108,29 +124,43 @@
                 style="
                   width: calc(100% - 20px);
                   margin-left: 20px;
-                  margin-bottom: 25px;
+                  margin-bottom: 10px;
                 "
                 :rows="2"
                 type="textarea"
                 placeholder="請輸入巡檢項建議"
               />
-              <el-button type="info" plain @click="sentRequest(_item)" :disabled="_item.images && _item.images.length >= 3">螢幕截圖</el-button>
-                <div class="imgscreen" v-show="isShow">
-                  <div v-for="(img, idx) in _item.images" :key="idx" class="image-wrapper">
-                    <img :src="img" alt="" width="100%" class="screenshot-image" />
-                    <el-button
-                      type="danger"
-                      size="small"
-                      circle
-                      class="delete-btn"
-                      @click="deleteImage(_item, idx)"
-                    >
-                      <el-icon size="12"><Close /></el-icon>
-                    </el-button>
-                  </div>
+              <el-button
+                style="margin-bottom: 10px; margin-left: 20px"
+                type="info"
+                plain
+                @click="sentRequest(_item)"
+                :disabled="_item.images && _item.images.length >= 3"
+                >螢幕截圖</el-button
+              >
+              <div class="imgscreen" v-show="isShow">
+                <div
+                  v-for="(img, idx) in _item.images"
+                  :key="idx"
+                  class="image-wrapper"
+                >
+                  <img
+                    :src="img"
+                    alt=""
+                    width="100%"
+                    class="screenshot-image"
+                  />
+                  <el-button
+                    type="danger"
+                    size="small"
+                    circle
+                    class="delete-btn"
+                    @click="deleteImage(_item, idx)"
+                  >
+                    <el-icon size="12"><Close /></el-icon>
+                  </el-button>
                 </div>
-
-    
+              </div>
             </div>
           </div>
         </div>
@@ -726,9 +756,9 @@ export default {
 
         // 遞迴初始化所有 item.images = []
         function initImages(arr) {
-          arr.forEach(group => {
+          arr.forEach((group) => {
             if (group.items) {
-              group.items.forEach(item => {
+              group.items.forEach((item) => {
                 if (!Array.isArray(item.images)) item.images = [];
               });
             }
@@ -792,7 +822,7 @@ export default {
     const sentRequest = (item) => {
       // 檢查是否已達到3張截圖限制
       if (item.images && item.images.length >= 3) {
-        ElMessage.warning('每個項目最多只能上傳3張截圖');
+        ElMessage.warning("每個項目最多只能上傳3張截圖");
         return;
       }
 
@@ -864,7 +894,7 @@ export default {
     const deleteImage = (item, index) => {
       if (item.images && item.images.length > index) {
         item.images.splice(index, 1);
-        ElMessage.success('圖片已刪除');
+        ElMessage.success("圖片已刪除");
       }
     };
 
@@ -979,12 +1009,16 @@ export default {
         line-height: 1.5
 
 // 圖片容器和刪除按鈕的樣式
-.image-wrapper
-  position: relative
-  display: inline-block
-  width: 30%
-  margin-right: 10px
-  margin-bottom: 8px
+.imgscreen
+  margin-left: 20px
+  margin-bottom: 30px
+  .image-wrapper
+    position: relative
+    display: inline-block
+    width: 30%
+
+    margin-right: 10px
+    margin-bottom: 8px
 
 .screenshot-image
   display: block
@@ -1011,4 +1045,7 @@ export default {
 
   .el-icon
     margin: 0
+
+  .screenshot_btn
+    margin-bottom: 30px
 </style>
