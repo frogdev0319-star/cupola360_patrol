@@ -41,7 +41,7 @@
                       style="
                         --el-switch-on-color: #409eff;
                         --el-switch-off-color: #eee;
-                        width: 130px;
+                        width: 140px;
                       "
                       active-text="合格"
                       inactive-text="不合格"
@@ -112,7 +112,7 @@
                     style="
                       --el-switch-on-color: #409eff;
                       --el-switch-off-color: #eee;
-                      width: 130px;
+                      width: 140px;
                     "
                     active-text="合格"
                     inactive-text="不合格"
