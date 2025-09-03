@@ -168,7 +168,7 @@
 
     <!-- sumit -->
     <el-card class="demo-section">
-      <el-button type="primary" size="large" @click="submit"
+      <el-button type="primary" size="large" @click="submitCurrentReport"
         >提交報告</el-button
       >
     </el-card>
@@ -435,7 +435,10 @@ export default {
       }
     };
 
-    const  submit = async () => {
+
+    
+
+    const  submitCurrentReport = async () => {
       var tempSubmitItem = [];
       inspectDetail.value.forEach((i) => {
         if (i.children) {
@@ -502,6 +505,11 @@ export default {
       console.log("tempSubmitItem :>> ", tempSubmitItem);
       console.log("submit inspectDetail :>> ", inspectDetail.value);
     };
+
+
+
+
+
 
     return {
       selectedOption,
