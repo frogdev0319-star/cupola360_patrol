@@ -168,17 +168,46 @@
 
     <!-- sumit -->
     <el-card class="demo-section">
-      <el-button type="primary" size="large" @click="submitCurrentReport"
+      <el-button type="primary" size="large" @click="submitCurrentReport" :disabled="isSubmitting"
         >提交報告</el-button
       >
     </el-card>
+
+    <!-- 上傳進度 popup -->
+    <el-dialog
+      v-model="uploadDialogVisible"
+      title="上傳圖片中..."
+      :close-on-click-modal="false"
+      :close-on-press-escape="false"
+      :show-close="false"
+      width="400px"
+      center
+    >
+      <div class="upload-progress">
+        <div class="progress-info">
+          <p>正在上傳圖片 {{ currentImageIndex }} / {{ totalImages }}</p>
+          <p class="progress-text">{{ Math.round(uploadProgress) }}%</p>
+        </div>
+        <el-progress
+          :percentage="uploadProgress"
+          :stroke-width="12"
+          :show-text="false"
+          color="#409eff"
+          class="upload-progress-bar"
+        />
+        <div class="upload-status">
+          <span v-if="uploadProgress < 100">上傳中...</span>
+          <span v-else class="success-text">上傳完成！</span>
+        </div>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script>
 import { ref, reactive, onMounted } from "vue";
 import { ElMessage } from "element-plus";
-import { login, getInspection, submitInspect ,getInspectToken } from "../api/user";
+import { login, getInspection, submitInspect ,getInspectToken, uploadScreenshotToBlob } from "../api/user";
 import { Clock, Close } from "@element-plus/icons-vue";
 
 export default {
@@ -193,6 +222,11 @@ export default {
     let currentItem = null;
 
     const loading = ref(true);
+    const uploadDialogVisible = ref(false);
+    const uploadProgress = ref(0);
+    const currentImageIndex = ref(0);
+    const totalImages = ref(0);
+    const isSubmitting = ref(false);
 
     let parentUrl = null;
 
@@ -315,7 +349,6 @@ export default {
         );
       }
     };
-
     const getRouteByTag = (curTag, data) => {
       const temp = [];
       if (data.length != 0) {
@@ -435,77 +468,191 @@ export default {
       }
     };
 
+    // 輔助函數：處理單個項目的圖片上傳
+    const processItem = async (_items, onImageProgress) => {
+      var i_temp = {};
+      _items.itemScore = _items.itemScore == true ? 1 : 0;
+      i_temp.ts = Date.parse(new Date());
+      i_temp.grade = _items.itemScore;
+      i_temp.description = _items.description;
+      i_temp.storeId = "KjRcBMbWKWms";
+      i_temp.inspectItemId = _items.id;
+
+      // 處理圖片上傳
+      if (_items.images && _items.images.length > 0) {
+        i_temp.attachment = [];
+        for (let idx = 0; idx < _items.images.length; idx++) {
+          const imageData = _items.images[idx];
+          console.log('imageData :>> ', imageData);
+
+          try {
+            let blobData;
+            if (imageData.startsWith('data:image')) {
+              // base64 數據，直接使用
+              blobData = imageData;
+            } else {
+              // URL，需要先下載轉換為 base64
+              console.log('下載 URL 圖片:', imageData);
+              const response = await fetch(imageData);
+              const blob = await response.blob();
+              blobData = await new Promise((resolve) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.readAsDataURL(blob);
+              });
+            }
+
+            const fileName = generateFileName();
+            const uploadedUrl = await uploadScreenshotToBlob(blobData, fileName, (progress) => {
+              // 調用進度回調函數
+              if (onImageProgress) {
+                onImageProgress(idx, progress);
+              }
+            });
+            console.log('uploadedUrl :>> ', uploadedUrl);
+
+            i_temp.attachment.push({
+              ts: Date.parse(new Date()),
+              mediaType: 2,
+              url: uploadedUrl,
+              deviceId: -1
+            });
+
+          } catch (error) {
+            console.error(`Failed to upload image ${idx} for item ${_items.id}:`, error);
+            // 如果上傳失敗，可以選擇跳過或使用預設 URL
+          }
+        }
+      }
+      return i_temp
+    };
+
+    // 輔助函數：生成唯一文件名
+    const generateFileName = () => {
+        const now = new Date();
+        const dateStr = now.getFullYear() +
+          String(now.getMonth() + 1).padStart(2, '0') +
+          String(now.getDate()).padStart(2, '0');
+        const randomStr = Math.random().toString(36).substring(2, 15);
+        return `inspect_${Date.now()}_${randomStr}.jpg`;
+      };
+
+
+    const submitCurrentReport = async () => {
+      // 設置提交狀態
+      isSubmitting.value = true;
+
+      // 計算總圖片數量
+      let totalImageCount = 0;
+      for (const i of inspectDetail.value) {
+        if (i.children) {
+          for (const ii of i.children) {
+            for (const _items of ii.items) {
+              if (_items.images && _items.images.length > 0) {
+                totalImageCount += _items.images.length;
+              }
+            }
+          }
+        } else {
+          for (const _items of i.items) {
+            if (_items.images && _items.images.length > 0) {
+              totalImageCount += _items.images.length;
+            }
+          }
+        }
+      }
+
+     
+
+     
+
+      var tempSubmitItem = [];
+      let processedImages = 0;
+
+      // 處理所有項目
+      for (const i of inspectDetail.value) {
+        if (i.children) {
+          for (const ii of i.children) {
+            for (const _items of ii.items) {
+              const xxddd = await processItem(_items, (imageIdx, progress) => {
+                // 更新進度
+                currentImageIndex.value = processedImages + imageIdx + 1;
+                uploadProgress.value = ((processedImages + imageIdx + (progress / 100)) / totalImageCount) * 100;
+              });
+              tempSubmitItem.push(xxddd);
+              processedImages += _items.images ? _items.images.length : 0;
+            }
+          }
+        } else {
+          for (const _items of i.items) {
+            const xxddd = await processItem(_items, (imageIdx, progress) => {
+              // 更新進度
+              currentImageIndex.value = processedImages + imageIdx + 1;
+              uploadProgress.value = ((processedImages + imageIdx + (progress / 100)) / totalImageCount) * 100;
+            });
+            tempSubmitItem.push(xxddd);
+            processedImages += _items.images ? _items.images.length : 0;
+          }
+        }
+      }
+      
+       // 如果沒有圖片要上傳，直接提交
+      if (totalImageCount === 0) {
+        await submitReport(tempSubmitItem);
+        return;
+      }
+
+
+       // 顯示上傳進度 popup
+      totalImages.value = totalImageCount;
+      currentImageIndex.value = 0;
+      uploadProgress.value = 0;
+      uploadDialogVisible.value = true;
+
+      // 設置進度為 100%
+      uploadProgress.value = 100;
+      // 延遲一下再關閉 popup，讓用戶看到 100%
+      setTimeout(async () => {
+        uploadDialogVisible.value = false;
+        await submitReport(tempSubmitItem);
+      }, 500);
+    };
+
 
     
-
-    const  submitCurrentReport = async () => {
-      var tempSubmitItem = [];
-      inspectDetail.value.forEach((i) => {
-        if (i.children) {
-          i.children.forEach((ii) => {
-            ii.items.forEach((_items) => {
-              var i_temp = {};
-              _items.itemScore = _items.itemScore == true ? 1 : 0;
-
-              i_temp.ts = Date.parse(new Date());
-              i_temp.grade = _items.itemScore;
-              i_temp.description = _items.description;
-              i_temp.storeId = "KjRcBMbWKWms";
-              i_temp.inspectItemId = _items.id;
-              i_temp.attachment = [
-                {
-                  ts: Date.parse(new Date()),
-                  mediaType: 2,
-                  url: "https://storevuestorage.blob.core.windows.net/storevue-mgmt-portals/image/20250903/inspect_101603440_9TAfZa3K2E3t_48570_0.jpg",
-                  deviceId: -1
-                }
-              ]
-
-              tempSubmitItem.push(i_temp);
-            });
-          });
-        } else {
-          i.items.forEach((_items) => {
-            var i_temp = {};
-            _items.itemScore = _items.itemScore == true ? 1 : 0;
-
-            i_temp.ts = Date.parse(new Date());
-            i_temp.grade = _items.itemScore;
-            i_temp.description = _items.description;
-            i_temp.storeId = "KjRcBMbWKWms";
-            i_temp.inspectItemId = _items.id;
-
-            tempSubmitItem.push(i_temp);
-          });
-        }
-      });
+    
+    // 提交報告的輔助函數
+    const submitReport = async (tempSubmitItem) => {
+      var n = tempSubmitItem.length
+      var quarifyNumber = tempSubmitItem.filter(i => i.grade == 1).length
+      const score = Math.round( 100 / n * quarifyNumber)
+      console.log('score :>> ', score);
 
       var params = {
         status: 2,
         comment: "",
-        reportScore: 16,
+        reportScore: score,
         // uuid: "d3cXjRypQZsrhsGL",
         weatherType: 100,
         execute_sign_distance: -1,
         isMysteryMode: false,
         items: tempSubmitItem,
+      };
 
-      }
 
-
-      await submitInspect(params)
-      .then((res) => {
+      console.log('params :>> ', params);
+      try {
+        const res = await submitInspect(params);
         console.log('res :>> ', res);
-      })
-      .catch((err) => {
-        console.error("login error", err);
-      });
-
-
-      console.log("tempSubmitItem :>> ", tempSubmitItem);
-      console.log("submit inspectDetail :>> ", inspectDetail.value);
+        ElMessage.success("報告提交成功");
+      } catch (err) {
+        console.error("submit error", err);
+        ElMessage.error("報告提交失敗");
+      } finally {
+        // 重置提交狀態
+        isSubmitting.value = false;
+      }
     };
-
 
 
 
@@ -520,13 +667,18 @@ export default {
       inspectDetail,
       inspectTagName,
       loading,
+      uploadDialogVisible,
+      uploadProgress,
+      currentImageIndex,
+      totalImages,
+      isSubmitting,
 
       screenShot,
       getRouteByTag,
       handleInspctionCatergyTree,
       sentRequest,
       deleteImage,
-      submit,
+      submitCurrentReport,
     };
   },
 };
@@ -624,4 +776,34 @@ export default {
 
   .screenshot_btn
     margin-bottom: 30px
+
+// 上傳進度 popup 樣式
+.upload-progress
+  text-align: center
+  padding: 20px 0
+
+  .progress-info
+    margin-bottom: 20px
+
+    p
+      margin: 5px 0
+      font-size: 14px
+      color: #666
+
+    .progress-text
+      font-size: 18px
+      font-weight: bold
+      color: #409eff
+
+  .upload-progress-bar
+    margin: 20px 0
+
+  .upload-status
+    margin-top: 15px
+    font-size: 14px
+    color: #666
+
+    .success-text
+      color: #67c23a
+      font-weight: bold
 </style>

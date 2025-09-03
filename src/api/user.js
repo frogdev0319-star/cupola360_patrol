@@ -39,6 +39,57 @@ export function submitInspect(data) {
     })
 }
 
+// 上傳截圖到 blob storage
+export async function uploadScreenshotToBlob(imageData, fileName, onProgress) {
+    // 將 base64 圖片數據轉換為 blob
+    const byteString = atob(imageData.split(',')[1]);
+    const mimeString = imageData.split(',')[0].split(':')[1].split(';')[0];
+    const ab = new ArrayBuffer(byteString.length);
+    const ia = new Uint8Array(ab);
+    for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+    }
+    const blob = new Blob([ab], { type: mimeString });
+
+    // Azure Blob Storage SAS token
+    const sasToken = "?sv=2020-08-04&ss=bfqt&srt=sco&sp=rwdlacupitfx&se=2030-03-30T16:13:56Z&st=2022-03-30T08:13:56Z&spr=https&sig=Cab8bPeymLcVk9jmHhekHQqHPzAaaVFfhT%2BnIXmVLZU%3D";
+
+    // 構建完整的 blob URL
+    const blobUrl = `https://storevuestorage.blob.core.windows.net/storevue-mgmt-portals/cupola360/image/${fileName}${sasToken}`;
+
+    return new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+
+        xhr.upload.addEventListener('progress', (event) => {
+            if (event.lengthComputable && onProgress) {
+                const percentComplete = (event.loaded / event.total) * 100;
+                onProgress(percentComplete);
+            }
+        });
+
+        xhr.addEventListener('load', () => {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                console.log('Upload successful');
+                // 返回上傳後的 URL（不包含 SAS token）
+                resolve(`https://storevuestorage.blob.core.windows.net/storevue-mgmt-portals/cupola360/image/${fileName}`);
+            } else {
+                console.log('Upload failed:', xhr.status, xhr.statusText);
+                reject(new Error(`Upload failed: ${xhr.status} ${xhr.statusText}`));
+            }
+        });
+
+        xhr.addEventListener('error', () => {
+            console.error('Upload error:', xhr.error);
+            reject(new Error('Upload failed'));
+        });
+
+        xhr.open('PUT', blobUrl);
+        xhr.setRequestHeader('x-ms-blob-type', 'BlockBlob');
+        xhr.setRequestHeader('Content-Type', mimeString);
+        xhr.send(blob);
+    });
+}
+
 
 
 // // 獲取用戶資料
