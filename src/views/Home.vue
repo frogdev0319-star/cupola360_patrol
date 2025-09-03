@@ -1,20 +1,9 @@
 <template>
   <div class="home" v-loading="loading">
-    <!-- screenshot -->
-    <!-- <el-card class="demo-section" id="form">
-      <template #header>
-        <h2 style="font-size: 20px">螢幕截圖</h2>
-      </template>
-      <el-button type="info" plain @click="sentRequest()">螢幕截圖</el-button>
-      <div class="imgscreen" v-show="isShow">
-        <img :src="showimgSrc" alt="" width="100%" />
-      </div>
-    </el-card> -->
-
     <!-- 表單示範區域 -->
     <el-card class="demo-section" id="form">
       <template #header>
-        <!-- <h2 style="font-size: 20px;">{{ inspectDetail[0].tag }}</h2> -->
+        <h2 style="font-size: 20px">{{ inspectTagName }}</h2>
       </template>
 
       <div
@@ -189,8 +178,7 @@
 <script>
 import { ref, reactive, onMounted } from "vue";
 import { ElMessage } from "element-plus";
-import { submitFormData } from "../api/data";
-import { login, getInspection, getInspectToken } from "../api/user";
+import { login, getInspection, submitInspect ,getInspectToken } from "../api/user";
 import { Clock, Close } from "@element-plus/icons-vue";
 
 export default {
@@ -234,7 +222,7 @@ export default {
       loading.value = true;
       // await userLogin();
       // await getToken();
-
+      
       await getWebUrlToken();
       await getInspectData();
     };
@@ -257,7 +245,19 @@ export default {
     const getWebUrlToken = () => {
       const url = new URL(window.location.href);
       const token = url.searchParams.get("token");
-      localStorage.setItem("token", token);
+
+      console.log("url :>> ", url);
+      console.log("token :>> ", token);
+
+
+      if(url.hostname == "localhost" && token == null){
+        getToken()
+      } 
+      else {
+        localStorage.setItem("token", token);
+      }
+
+      
     };
 
     const testsecret = "testsecret";
@@ -282,10 +282,12 @@ export default {
         });
     };
 
+    const inspectTagName = ref("");
     const getInspectData = async () => {
       try {
         const inspectionRes = await getInspection();
-        console.log("inspectionRes :>> ", inspectionRes);
+        inspectTagName.value = inspectionRes.inspectTagName;
+        console.log("inspectTagName.value :>> ", inspectTagName.value);
 
         const filterData = handleInspctionCatergyTree(inspectionRes.groups);
 
@@ -391,7 +393,7 @@ export default {
           // 僅接受可信來源（與父頁相同的 origin 若可判斷）
           try {
             if (document.referrer) {
-              console.log("document.referrer :>> ", document.referrer);
+              // console.log("document.referrer :>> ", document.referrer);
               const parentOrigin = new URL(document.referrer).origin;
               if (event.origin !== parentOrigin) return;
             }
@@ -433,7 +435,7 @@ export default {
       }
     };
 
-    const submit = () => {
+    const  submit = async () => {
       var tempSubmitItem = [];
       inspectDetail.value.forEach((i) => {
         if (i.children) {
@@ -447,6 +449,14 @@ export default {
               i_temp.description = _items.description;
               i_temp.storeId = "KjRcBMbWKWms";
               i_temp.inspectItemId = _items.id;
+              i_temp.attachment = [
+                {
+                  ts: Date.parse(new Date()),
+                  mediaType: 2,
+                  url: "https://storevuestorage.blob.core.windows.net/storevue-mgmt-portals/image/20250903/inspect_101603440_9TAfZa3K2E3t_48570_0.jpg",
+                  deviceId: -1
+                }
+              ]
 
               tempSubmitItem.push(i_temp);
             });
@@ -466,6 +476,29 @@ export default {
           });
         }
       });
+
+      var params = {
+        status: 2,
+        comment: "",
+        reportScore: 16,
+        // uuid: "d3cXjRypQZsrhsGL",
+        weatherType: 100,
+        execute_sign_distance: -1,
+        isMysteryMode: false,
+        items: tempSubmitItem,
+
+      }
+
+
+      await submitInspect(params)
+      .then((res) => {
+        console.log('res :>> ', res);
+      })
+      .catch((err) => {
+        console.error("login error", err);
+      });
+
+
       console.log("tempSubmitItem :>> ", tempSubmitItem);
       console.log("submit inspectDetail :>> ", inspectDetail.value);
     };
@@ -477,6 +510,7 @@ export default {
       showimgSrc,
       isShow,
       inspectDetail,
+      inspectTagName,
       loading,
 
       screenShot,

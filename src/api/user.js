@@ -24,9 +24,18 @@ export function getInspection() {
 
 export function getInspectToken() {
     return request({
-        url: 'https://demo-factory.cupola360.com/1/plugin/iService?key=testsecret2',
+        url: 'https://demo-factory.cupola360.com/1/plugin/iService?key=testsecret3',
         method: 'get',
 
+    })
+}
+
+
+export function submitInspect(data) {
+    return request({
+        url: 'https://preview-inspection.wise-iservice.com/storemonitor/api/v1.0/inspect/remote/submit',
+        method: 'post',
+        data
     })
 }
 
