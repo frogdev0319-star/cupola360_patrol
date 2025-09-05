@@ -24,7 +24,7 @@ export function getInspection() {
 
 export function getInspectToken() {
     return request({
-        url: 'https://demo-factory.cupola360.com/1/plugin/iService?key=testsecret3',
+        url: 'https://demo-factory.cupola360.com/1/plugin/iService?key=testsecret5',
         method: 'get',
 
     })

@@ -209,6 +209,7 @@ import { ref, reactive, onMounted } from "vue";
 import { ElMessage } from "element-plus";
 import { login, getInspection, submitInspect ,getInspectToken, uploadScreenshotToBlob } from "../api/user";
 import { Clock, Close } from "@element-plus/icons-vue";
+import router from "../router/index.js";
 
 export default {
   name: "Home",
@@ -562,9 +563,8 @@ export default {
         }
       }
 
-     
-
-     
+      uploadProgress.value = 0;
+      uploadDialogVisible.value = true;
 
       var tempSubmitItem = [];
       let processedImages = 0;
@@ -606,8 +606,7 @@ export default {
        // 顯示上傳進度 popup
       totalImages.value = totalImageCount;
       currentImageIndex.value = 0;
-      uploadProgress.value = 0;
-      uploadDialogVisible.value = true;
+      
 
       // 設置進度為 100%
       uploadProgress.value = 100;
@@ -645,6 +644,7 @@ export default {
         const res = await submitInspect(params);
         console.log('res :>> ', res);
         ElMessage.success("報告提交成功");
+        router.push('/finish');
       } catch (err) {
         console.error("submit error", err);
         ElMessage.error("報告提交失敗");
