@@ -161,9 +161,30 @@
       <template #header>
         <h2 style="font-size: 20px">巡檢總評</h2>
       </template>
-      <el-button type="info" plain>良好</el-button>
-      <el-button type="info" plain>待改善</el-button>
-      <el-button type="info" plain>立即督導</el-button>
+      <el-button
+        :type="selectedEvaluation === '良好' ? 'primary' : 'info'"
+        plain
+        @click="selectEvaluation('良好')"
+        :class="{ 'selected-evaluation': selectedEvaluation === '良好' }"
+      >
+        良好
+      </el-button>
+      <el-button
+        :type="selectedEvaluation === '待改善' ? 'primary' : 'info'"
+        plain
+        @click="selectEvaluation('待改善')"
+        :class="{ 'selected-evaluation': selectedEvaluation === '待改善' }"
+      >
+        待改善
+      </el-button>
+      <el-button
+        :type="selectedEvaluation === '立即督導' ? 'primary' : 'info'"
+        plain
+        @click="selectEvaluation('立即督導')"
+        :class="{ 'selected-evaluation': selectedEvaluation === '立即督導' }"
+      >
+        立即督導
+      </el-button>
     </el-card>
 
     <!-- sumit -->
@@ -217,6 +238,8 @@ export default {
     const selectedOption = ref("option1");
     const isQualified = ref(true);
     const textarea = ref("");
+    const selectedEvaluation = ref("良好"); // 巡檢總評選中狀態，預設為良好
+    const reportStatus = ref(2); // 巡檢總評狀態值，預設為良好(2)
     // 每個 item 各自多圖，不再用全域 showimgSrc
     const showimgSrc = ref([]); // 保留但不再用
     // 暫存目前要 push 圖片的 item id
@@ -469,6 +492,28 @@ export default {
       }
     };
 
+    // 處理巡檢總評按鈕點擊
+    const selectEvaluation = (evaluation) => {
+      selectedEvaluation.value = evaluation;
+
+      // 設置對應的 reportStatus 值
+      switch (evaluation) {
+        case '立即督導':
+          reportStatus.value = 0;
+          break;
+        case '待改善':
+          reportStatus.value = 1;
+          break;
+        case '良好':
+          reportStatus.value = 2;
+          break;
+        default:
+          reportStatus.value = null;
+      }
+
+      console.log('Selected evaluation:', evaluation, 'Report status:', reportStatus.value);
+    };
+
     // 輔助函數：處理單個項目的圖片上傳
     const processItem = async (_items, onImageProgress) => {
       var i_temp = {};
@@ -540,6 +585,12 @@ export default {
 
 
     const submitCurrentReport = async () => {
+      // 檢查是否已選擇總評
+      if (reportStatus.value === null) {
+        ElMessage.warning("請先選擇巡檢總評");
+        return;
+      }
+
       // 設置提交狀態
       isSubmitting.value = true;
 
@@ -563,13 +614,42 @@ export default {
         }
       }
 
+      // 如果沒有圖片要上傳，直接提交，不顯示 popup
+      if (totalImageCount === 0) {
+        var tempSubmitItem = [];
+        let processedImages = 0;
+
+        // 處理所有項目（無圖片版本）
+        for (const i of inspectDetail.value) {
+          if (i.children) {
+            for (const ii of i.children) {
+              for (const _items of ii.items) {
+                const xxddd = await processItem(_items);
+                tempSubmitItem.push(xxddd);
+                processedImages += _items.images ? _items.images.length : 0;
+              }
+            }
+          } else {
+            for (const _items of i.items) {
+              const xxddd = await processItem(_items);
+              tempSubmitItem.push(xxddd);
+              processedImages += _items.images ? _items.images.length : 0;
+            }
+          }
+        }
+
+        await submitReport(tempSubmitItem);
+        return;
+      }
+
+      // 有圖片需要上傳時，才顯示 popup
       uploadProgress.value = 0;
       uploadDialogVisible.value = true;
 
       var tempSubmitItem = [];
       let processedImages = 0;
 
-      // 處理所有項目
+      // 處理所有項目（有圖片版本）
       for (const i of inspectDetail.value) {
         if (i.children) {
           for (const ii of i.children) {
@@ -595,18 +675,10 @@ export default {
           }
         }
       }
-      
-       // 如果沒有圖片要上傳，直接提交
-      if (totalImageCount === 0) {
-        await submitReport(tempSubmitItem);
-        return;
-      }
 
-
-       // 顯示上傳進度 popup
+      // 顯示上傳進度 popup
       totalImages.value = totalImageCount;
       currentImageIndex.value = 0;
-      
 
       // 設置進度為 100%
       uploadProgress.value = 100;
@@ -628,7 +700,7 @@ export default {
       console.log('score :>> ', score);
 
       var params = {
-        status: 2,
+        status: reportStatus.value,
         comment: "",
         reportScore: score,
         // uuid: "d3cXjRypQZsrhsGL",
@@ -672,12 +744,15 @@ export default {
       currentImageIndex,
       totalImages,
       isSubmitting,
+      selectedEvaluation,
+      reportStatus,
 
       screenShot,
       getRouteByTag,
       handleInspctionCatergyTree,
       sentRequest,
       deleteImage,
+      selectEvaluation,
       submitCurrentReport,
     };
   },
@@ -806,4 +881,11 @@ export default {
     .success-text
       color: #67c23a
       font-weight: bold
+
+// 巡檢總評按鈕樣式
+.selected-evaluation
+  background-color: #409eff !important
+  border-color: #409eff !important
+  color: white !important
+  font-weight: bold
 </style>

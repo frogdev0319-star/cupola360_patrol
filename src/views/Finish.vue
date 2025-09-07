@@ -3,7 +3,7 @@
     <div class="card">
       <img src="/assets/images/check.svg" alt="check" class="checkmark" />
       <h1> 報告已送出，已完成巡檢</h1>
-      <button class="restart-button" @click="goHome">重新巡檢</button>
+      <!-- <button class="restart-button" @click="goHome">重新巡檢</button> -->
     </div>
   </div>
 </template>
