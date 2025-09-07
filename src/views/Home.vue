@@ -524,9 +524,11 @@ export default {
       i_temp.storeId = "KjRcBMbWKWms";
       i_temp.inspectItemId = _items.id;
 
+      // 初始化attachment數組
+      i_temp.attachment = [];
+
       // 處理圖片上傳
       if (_items.images && _items.images.length > 0) {
-        i_temp.attachment = [];
         for (let idx = 0; idx < _items.images.length; idx++) {
           const imageData = _items.images[idx];
           console.log('imageData :>> ', imageData);
@@ -569,6 +571,17 @@ export default {
             // 如果上傳失敗，可以選擇跳過或使用預設 URL
           }
         }
+      }
+
+      // 如果有描述，將其作為attachment添加
+      if (_items.description && _items.description.trim() !== '') {
+        i_temp.attachment.push({
+          mediaType: 3,
+          url: _items.description,
+          deviceId: -1,
+          ts: Date.parse(new Date()),
+          isH265: false
+        });
       }
       return i_temp
     };
@@ -703,6 +716,7 @@ export default {
         status: reportStatus.value,
         comment: "",
         reportScore: score,
+        description: "XDXDXD",
         // uuid: "d3cXjRypQZsrhsGL",
         weatherType: 100,
         execute_sign_distance: -1,
